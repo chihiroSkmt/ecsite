@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+<link href="/css/style.css" th:href="@{/css/style.css}" rel="stylesheet" />
+<script src="http://code.jquery.com/jquery-3.4.1.min.js"></script>	<!-- jQuery($~)を使うためにサーバー上に公開されたプログラムを読み込む -->
+<script>
+/* 『削除』ボタンを押して商品一覧から商品を削除する処理 */
+$(() => {	/* ( 引数 ) => { 関数の本体 }　:アロー関数。引数が１つであれば()が省略可能。本体が一文であれば{}も省略可能 */
+	$('.deleteBtn').on('click', (event) => {	/* $(セレクタ).on( イベント名, 関数 ); */
+		event.preventDefault();	/* イベントインターフェースのpreventDefault()メソッド：無効な値が下の処理に到達するのを防いでいる。 */
+		let tdList = $(event.target).parent().parent().find('td');	/* <table id="adminTable">のtd (deleteBtnの親の親の中にあるtd要素<td>) を取得 */
+																	/* let:使用された文または式にスコープを限定した変数が宣言ができる */
+																	/* event.target:イベントを発生させたオブジェクトへの参照 */
+																	/* parent:ノード。ノード:各要素。特定のノードを基準としたときに、
+																						　 その上にあるノードを「親:parent」、
+																						   その下にあるノードを「子:childまたはchildren」、
+																						   同一階層にあるノードを「兄弟姉妹:siblings」ノードと表現 */
+		
+		let id = $(tdList[0]).text();	/* tdListの[0]に格納されている値(文字列)を取得し、変数idへ代入 */
+		let jsonString = {	/* {〇〇: △△, 〇〇: △△, ・・・}: オブジェクトの分割代入 */
+				'id': id,
+				'goodsName': $(tdList[1]).text(),	/* tdListの[1]に格納されている値(文字列)を取得 */
+				'price': ''
+		};
+		$.ajax({	/* $.ajax({ 実行する処理 }); :非同期通信。jQueryはAjax処理を簡単に記述できるように設計されている */
+			type: 'POST',	/* 通信方法(GET or POST) */
+			url:'/ecsite/admin/api/deleteGoods',	/* リクエストを送信する先 */
+			data: JSON.stringify(jsonString),	/* アクセスするときに必要なデータ */
+												/* JSON:JavaScriptのデータ定義文をベースとした簡易的なデータ定義言語(java,php,htmlとかと一緒。拡張子「〜.json」)
+														軽量のデータ交換フォーマットで、人間にとって読み書きが容易でマシンにとっても簡単にパースや生成を行なえる形式。
+														JSONを使用して、非同期通信を行うのが主流 */
+												/* JSON.stringify():メソッド。あるJavaScriptのオブジェクトや値を「JSON」文字列に変換。
+																	ここではjsonStringのid, goodsName, priceを変換 */
+			contentType: 'application/json',	/* サーバにデータを送信する際に用いるcontent-type。 */
+			scriptCharset: 'utf-8'	/* データを読み込む際の文字コードの種類を指定。dataTypeが"jsonp"もしくは"script"で、
+									　　実行されるページと呼び出しているサーバ側のキャラセットが異なる場合のみ指定 */ 	/* GETリクエストの時のみ使用？ */
+		})
+		.then((result) => {	/* then()メソッド:非同期処理の後に実行したい処理。　.then({成功時の処理}, {失敗時の処理}); */
+				console.log(result);
+				alert(`商品[ ${jsonString.goodsName} ]を削除しました。`);	/* 文字列に変数を入れる場合は「''」ではなく「``」を使用 */
+				$(tdList).parent().remove();	/* .remove():マッチした要素を削除。例) $("p").remove(); P要素内のコンテンツを削除 */
+			}, () => {
+				console.error('Error: ajax connection failed.');
+			}
+		);
+	});
+});
+</script>
+
+<title>ECサイト</title>
+</head>
+<body>
+
+<header>
+	<h1>My EC Site</h1>
+</header>
+
+<table id="adminTable">
+	<thead>
+		<tr>
+			<th>ID</th><th>商品名</th><th>価格</th><th>削除</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr th:each="item: ${goods}">
+			<td th:text="${item.id}" />
+			<td th:text="${item.goodsName}" />
+			<td th:text="${item.price}" />
+			<td><button type="submit" class="deleteBtn">削除</button></td>
+		</tr>
+	</tbody>
+</table>
+<form name="goodsForm" id="adminPage" method="post" 
+	action="/ecsite/admin/goodsMst" th:action="@{/ecsite/admin/goodsMst}">
+	<button type="submit" th:if="${userName != null}">新規追加</button>
+	<input type="hidden" name="userName" th:value="${userName}" />
+	<input type="hidden" name="password" th:value="${password}" />
+</form>
+
+</body>
+</html>
